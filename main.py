@@ -34,14 +34,14 @@ def main():
     # ============= HYPERPARAMETERS =============
     SEQ_LENGTH = 30  # Lookback window (30 days back)
     HORIZON = 1
-    HIDDEN_SIZE = 64
-    NUM_LAYERS = 5  # Deep LSTM (5 layers)
-    DROPOUT = 0.25  # Higher dropout to mitigate overfitting in deep recurrent networks
+    HIDDEN_SIZE = 32
+    NUM_LAYERS = 4  # Deep LSTM (5 layers)
+    DROPOUT = 0.2  # Higher dropout to mitigate overfitting in deep recurrent networks
     EPOCHS = 150
     BATCH_SIZE = 32
     LEARNING_RATE = 1e-3
     WEIGHT_DECAY = 1e-5
-    PATIENCE = 25
+    PATIENCE = 50
 
     # ============= 1. LOAD DATA =============
     print("\n[1/6] Incarcare date...")
