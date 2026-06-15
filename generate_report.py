@@ -207,11 +207,11 @@ table2 = doc.add_table(rows=7, cols=2)
 table2.style = 'Light Grid Accent 1'
 params = [
     ('Input size', '12 features stationare'),
-    ('Hidden size', '64 neuroni in straturile LSTM'),
-    ('Numar straturi', '5 straturi LSTM (Deep LSTM)'),
-    ('Dropout', '0.25 (25% regularizare pentru prevenirea overfitting-ului)'),
+    ('Hidden size', '32 neuroni in straturile LSTM'),
+    ('Numar straturi', '4 straturi LSTM (Deep LSTM)'),
+    ('Dropout', '0.20 (20% regularizare pentru prevenirea overfitting-ului)'),
     ('Output', '1 (predictia return-ului t+1)'),
-    ('Parametri totali', '147,713 antrenabili'),
+    ('Parametri totali', '31,265 antrenabili'),
 ]
 for i, (k, v) in enumerate(params):
     table2.rows[i].cells[0].text = k
@@ -234,7 +234,7 @@ doc.add_heading('4.3 Hiperparametri de antrenare', level=2)
 table3 = doc.add_table(rows=6, cols=2)
 table3.style = 'Light Grid Accent 1'
 hyperparams = [
-    ('Epoci maximum', '150 (cu early stopping, patience=25)'),
+    ('Epoci maximum', '150 (cu early stopping, patience=50)'),
     ('Batch size', '32'),
     ('Learning rate', '1e-3 (0.001) cu scheduler ReduceLROnPlateau'),
     ('Optimizator', 'Adam (weight decay = 1e-5)'),
@@ -371,7 +371,7 @@ doc.add_paragraph()
 
 doc.add_heading('6.1 Interpretarea metricilor', level=2)
 doc.add_paragraph(
-    f'Modelul LSTM cu 147,713 parametri obtine un RMSE de ${rmse:,.2f} si un MAE de '
+    f'Modelul LSTM cu 31,265 parametri obtine un RMSE de ${rmse:,.2f} si un MAE de '
     f'${mae:,.2f} pe setul de test ({len(actual)} zile). MAPE-ul de {mape:.2f}% indica faptul ca, '
     f'in medie, predictia se abate extrem de putin (aproximativ 1-2%) de la valoarea reala a actiunii.'
 )

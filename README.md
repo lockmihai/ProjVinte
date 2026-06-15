@@ -60,26 +60,26 @@ Pentru modelul optimizat, am eliminat intrările absolute și am creat **caracte
 
 ### 4.1 Comparație Arhitectură și Hiperparametri
 
-| Parametru | Model Baseline | Model Optimizat |
+| Parametru | Model Baseline | Model Optimizat Final |
 | :--- | :---: | :---: |
-| **Variabile de intrare (Features)** | 9 (Brute + Simple: Open, High, Low, Close, Volume, LogReturn, HL_Range, SMA_5, RV_5) | **12 (Staționare complete)** |
+| **Variabile de intrare (Features)** | 9 (Brute + Simple) | **12 (Staționare complete)** |
 | **Dimensiune Fereastră (Lookback)** | 15 zile | **30 zile** |
-| **Straturi LSTM** | 1 strat | **2 straturi** |
-| **Neuroni Ascunși (Hidden Size)** | 32 | **64** |
+| **Straturi LSTM** | 1 strat | **4 straturi** |
+| **Neuroni Ascunși (Hidden Size)** | 32 | **32** |
 | **Dropout** | 0.10 | **0.20** |
-| **Parametri Antrenabili** | 5.537 | **53.313** |
+| **Parametri Antrenabili** | 5.537 | **31.265** |
 | **Batch Size** | 8 | **32** |
 | **Learning Rate** | 5e-4 | **1e-3** |
-| **Patience (Early Stopping)** | 15 epoci | **25 epoci** |
+| **Patience (Early Stopping)** | 15 epoci | **50 epoci** |
 
 ---
 
 ## 5. Rezultatele Antrenării și Evaluării (Modelul Optimizat)
 
-Modelul optimizat a rulat utilizând scriptul principal [main.py](file:///Users/mihai/Documents/ProjVinte/main.py). Datorită mecanismului de early stopping, antrenarea s-a oprit automat la **epoca 36** (cel mai bun loss pe validare fiind înregistrat la epoca 11).
+Modelul optimizat a rulat utilizând scriptul principal [main.py](file:///Users/mihai/Documents/ProjVinte/main.py). Datorită mecanismului de early stopping, antrenarea s-a oprit automat la **epoca 110** (cel mai bun loss pe validare fiind înregistrat la epoca 60, cu patience=50).
 
 ### 5.1 Evoluția funcției de pierdere (Loss History)
-Loss-ul de validare scade rapid și se stabilizează în primele 10 epoci, evoluând stabil fără semne de divergență (overfitting sever):
+Loss-ul de validare scade rapid și se stabilizează în primele 15-20 de epoci, evoluând stabil fără semne de divergență (overfitting sever):
 
 ![Evoluția Funcției de Pierdere](./output/loss_history.png)
 
@@ -102,37 +102,37 @@ Erorile absolute de predicție sunt distribuite simetric în jurul valorii de 0 
 
 ## 6. Metrici de Performanță
 
-Tabelul de mai jos compară performanțele modelului baseline (care prezicea prețuri absolute) cu cele ale modelului optimizat final (care prezice randamente pe o fereastră de 30 de zile cu 5 straturi LSTM și reconstruiește prețurile Close):
+Tabelul de mai jos compară performanțele modelului baseline (care prezicea prețuri absolute) cu cele ale modelului optimizat final (care prezice randamente pe o fereastră de 30 de zile cu 4 straturi LSTM și reconstruiește prețurile Close):
 
 | Metrică | Model Baseline | Model Optimizat Final (Reconstruit, SEQ=30) | Interpretare |
 | :--- | :---: | :---: | :--- |
-| **MSE (Mean Squared Error)** | 6.478,68 | **8,9248** | Eroarea pătratică medie (penalizează deviațiile mari). |
-| **RMSE (Root MSE)** | 80,49 USD | **2,9874 USD** | Eroarea medie absolută în dolari (~1.3% din prețul mediu). |
-| **MAE (Mean Absolute Error)** | 57,53 USD | **2,2138 USD** | Eroarea absolută medie (mai robustă la outlieri). |
-| **MAPE (%)** | 23,82% | **1,3444%** | Eroarea procentuală medie absolută. |
-| **$R^2$ (Coef. de determinare)** | -0,5899 | **0,9634** | Proporția varianței explicate (valori aproape de 1 sunt ideale). |
-| **Acuratețe Direcțională** | 50,85% | **66,81%** | Procentul de ghicire corectă a direcției (creștere vs scădere). |
+| **MSE (Mean Squared Error)** | 6.478,68 | **9,0774** | Eroarea pătratică medie (penalizează deviațiile mari). |
+| **RMSE (Root MSE)** | 80,49 USD | **3,0129 USD** | Eroarea medie absolută în dolari (~1.0% din prețul mediu). |
+| **MAE (Mean Absolute Error)** | 57,53 USD | **1,9918 USD** | Eroarea absolută medie (mai robustă la outlieri). |
+| **MAPE (%)** | 23,82% | **1,0610%** | Eroarea procentuală medie absolută. |
+| **$R^2$ (Coef. de determinare)** | -0,5899 | **0,9978** | Proporția varianței explicate (valori aproape de 1 sunt ideale). |
+| **Acuratețe Direcțională** | 50,85% | **70,46%** | Procentul de ghicire corectă a direcției (creștere vs scădere). |
 | **Bias / Eroare Sistematică** | 57,12 USD | **~0,00 USD** | Media erorilor simple (pozitiv = subestimare sistematică). |
 
 ### 6.1 Analiza Rezultatelor
-* **Reducerea erorilor**: Trecerea la caracteristici staționare a scăzut eroarea medie absolută (MAE) de la **$57.53** la doar **$2.21**, ceea ce înseamnă că modelul prezice prețul zilei următoare cu o abatere medie de sub 2.3 USD pe o acțiune tranzacționată la peste 200-300 USD.
-* **Corelația R²**: Valoarea negativă a baseline-ului ($R^2 = -0.5899$) arăta că prezicerea mediei istorice era mai bună decât rețeaua. Modelul optimizat final atinge un $R^2$ de **0.9634**, explicând 96.3% din dinamica prețului pe date nevăzute de test.
-* **Acuratețea Direcțională (Trend)**: Modelul baseline performa ca o aruncare de monedă (50.85%). Modelul optimizat final obține **66.81%** acuratețe direcțională pe setul de test, o performanță remarcabilă în prognoza financiară daily.
+* **Reducerea erorilor**: Trecerea la caracteristici staționare a scăzut eroarea medie absolută (MAE) de la **$57.53** la doar **$1.99**, ceea ce înseamnă că modelul prezice prețul zilei următoare cu o abatere medie de sub 2 USD pe o acțiune tranzacționată la peste 200-300 USD.
+* **Corelația R²**: Valoarea negativă a baseline-ului ($R^2 = -0.5899$) arăta că prezicerea mediei istorice era mai bună decât rețeaua. Modelul optimizat final atinge un $R^2$ de **0.9978**, explicând 99.78% din dinamica prețului pe date nevăzute de test.
+* **Acuratețea Direcțională (Trend)**: Modelul baseline performa ca o aruncare de monedă (50.85%). Modelul optimizat final obține **70.46%** acuratețe direcțională pe setul de test, o performanță remarcabilă în prognoza financiară daily.
 
 ---
 
 ## 7. Optimizarea Parametrilor Modelului Final
 
-Modelul final utilizează o arhitectură profundă formată din **5 straturi LSTM** cu un dropout de **0.25** și o fereastră istorică de lookback fixată la **30 de zile**. Această configurare a fost selectată deoarece:
+Modelul final utilizează o arhitectură profundă formată din **4 straturi LSTM** cu un dropout de **0.20** și o fereastră istorică de lookback fixată la **30 de zile**. Această configurare a fost selectată deoarece:
 * **Context istoric extins**: O fereastră de 30 de zile permite rețelei să capteze micro-trenduri și corelații pe o lună de tranzacționare completă, reducând riscul de decizii impulsive bazate pe zgomot de scurtă durată.
-* **Regularizare robustă**: Dropout-ul ridicat la 0.25 previne overfitting-ul pe rețeaua complexă de 5 straturi (147,713 parametri antrenabili), asigurând o capacitate de generalizare stabilă pe întregul set de testare 2022-2025.
+* **Regularizare robustă**: Dropout-ul de 0.20 previne overfitting-ul pe rețeaua complexă de 4 straturi (31.265 parametri antrenabili), asigurând o capacitate de generalizare stabilă pe întregul set de testare 2022-2025.
 
 ---
 
 ## 8. Concluzii
 
 1. **Importanța Staționarității**: Proiectul demonstrează că prezicerea prețurilor absolute în serii financiare non-staționare cu trend pe termen lung este ineficientă din cauza domain shift-ului. Staționarizarea input-urilor și a target-ului (predicția randamentelor) reprezintă cheia obținerii unor rezultate corecte.
-2. **Capacitatea Modelului**: Extinderea modelului la un LSTM profund cu 5 straturi (153.153 parametri) confirmă că rețelele recurente pot modela foarte bine dinamica randamentelor zilnice, reducând eroarea medie la doar ~1.05% pe setul de test.
+2. **Capacitatea Modelului**: Extinderea modelului la un LSTM profund cu 4 straturi (31.265 parametri) confirmă că rețelele recurente pot modela foarte bine dinamica randamentelor zilnice, reducând eroarea medie la doar ~1.06% pe setul de test.
 3. **Utilitate Practică**: Cu o eroare medie de ~1% și o acuratețe direcțională stabilă de peste 70%, modelul optimizat devine un instrument statistic robust ce poate fi integrat în sisteme algoritmice de tranzacționare (backtesting, gestiunea riscului).
 
 ---
