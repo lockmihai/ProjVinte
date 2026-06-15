@@ -1,0 +1,10 @@
+.DS_Store
+*.DS_Store
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+Seturi de date NYSE-20260610/
+*.zip
+*.docx

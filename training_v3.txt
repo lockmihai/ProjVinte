@@ -1,0 +1,52 @@
+============================================================
+  PREDICTIE PRET ACTIUNI CU LSTM
+  NYSE 2001-2025 | JPMorgan Chase (JPM)
+============================================================
+
+Device: cpu
+
+[1/6] Incarcare date...
+  data_jpm_full.csv: 6470 zile (2001-01-01 -> 2025-12-31)
+    Close: $15.45 - $329.17
+
+[2/6] Feature engineering + tinte...
+  Features: 11
+  Target:   Close (t+1)
+
+[3/6] Preprocesare date...
+  Split: train=4495, val=962, test=962
+  Train: 2001-03-09 -> 2018-05-31
+  Test:  2022-03-21 -> 2025-12-30
+  X_train: (4475, 20, 11)  y_train: (4475, 1)
+  X_val:   (942, 20, 11)    y_val:   (942, 1)
+  X_test:  (942, 20, 11)   y_test:  (942, 1)
+  Features: 11, Targets: 1
+
+[4/6] Construire model LSTM...
+  Arhitectura: LSTM(48, 1 layer)
+  Parametri: 11,761
+
+[5/6] Antrenare...
+  Epoch   1/150 | Train: 0.099900 | Val: 1.411721 | LR: 5.00e-04 | Pat: 0/20
+  Epoch  25/150 | Train: 0.008371 | Val: 0.534461 | LR: 5.00e-04 | Pat: 1/20
+  Epoch  50/150 | Train: 0.008258 | Val: 0.461635 | LR: 1.25e-04 | Pat: 11/20
+  Epoch  75/150 | Train: 0.007994 | Val: 0.352887 | LR: 1.25e-04 | Pat: 5/20
+  Early stopping @ epoch 97
+  Best val loss: 0.289043
+
+[6/6] Evaluare pe setul de test...
+
+==================================================
+REZULTATE EVALUARE
+==================================================
+  MSE                           : 5063.1909
+  RMSE                          : 71.1561
+  MAE                           : 50.6579
+  MAPE (%)                      : 20.9140
+  R²                            : -0.2426
+  Directional Accuracy (%)      : 51.4346
+
+============================================================
+  PROIECT FINALIZAT
+  Rezultate salvate in output/
+============================================================
