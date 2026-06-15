@@ -32,7 +32,7 @@ def main():
     print(f"\nDevice: {device}")
 
     # ============= HYPERPARAMETERS =============
-    SEQ_LENGTH = 8  # Lookback window (30 days back)
+    SEQ_LENGTH = 30  # Lookback window (30 days back)
     HORIZON = 1
     HIDDEN_SIZE = 16
     NUM_LAYERS = 4  # Deep LSTM (5 layers)
