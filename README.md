@@ -4,7 +4,7 @@
 
 * **Set de date**: NYSE (New York Stock Exchange)
 * **Ticker analizat**: JPM (JPMorgan Chase & Co.)
-* **Perioada**: 2001-2025 (932 zile de test)
+* **Perioada**: 2001-2025 (954 zile de test)
 
 ---
 
@@ -12,7 +12,7 @@
 
 Acest proiect implementează un model de rețea neuronală recurentă de tip LSTM (Long Short-Term Memory) pentru predicția prețului de închidere al acțiunilor JPMorgan Chase (JPM) tranzacționate pe bursa NYSE.
 
-Obiectivul principal este de a prezice prețul Close al zilei următoare (horizon = 1 zi) pe baza unei ferestre de 30 de zile de tranzacționare anterioare, utilizând atât variabilele OHLCV (Open, High, Low, Close, Volume), cât și indicatori tehnici derivați din acestea.
+Obiectivul principal este de a prezice prețul Close al zilei următoare (horizon = 1 zi) pe baza unei ferestre de 8 de zile de tranzacționare anterioare, utilizând atât variabilele OHLCV (Open, High, Low, Close, Volume), cât și indicatori tehnici derivați din acestea.
 
 ---
 
@@ -53,7 +53,7 @@ Modelul utilizează 12 variabile de intrare staționare pentru a preveni domain-
 Toate variabilele de intrare și ieșire au fost normalizate folosind `StandardScaler` (medie 0, deviație standard 1). Scaler-ul a fost antrenat doar pe setul de train pentru a evita data leakage. Valorile prezise sunt apoi readuse la scara originală pentru evaluare și interpretare.
 
 ### 3.3 Crearea secvențelor
-Pentru a alimenta modelul LSTM, datele au fost transformate în secvențe sliding window de 30 de zile. Fiecare secvență de 30 de zile consecutive (12 features × 30 pași temporali) este utilizată pentru a prezice prețul Close din ziua următoare ($t+1$) prin intermediul reconstrucției din randamentul prezis. Această abordare permite modelului să învețe pattern-uri temporale mai profunde.
+Pentru a alimenta modelul LSTM, datele au fost transformate în secvențe sliding window de 8 de zile. Fiecare secvență de 8 de zile consecutive (12 features × 8 pași temporali) este utilizată pentru a prezice prețul Close din ziua următoare ($t+1$) prin intermediul reconstrucției din randamentul prezis. Această abordare permite modelului să învețe pattern-uri temporale mai profunde.
 
 ---
 
@@ -72,18 +72,18 @@ Modelul are următoarea configurație:
 | Parametru | Configurație |
 | :--- | :--- |
 | **Input size** | 12 features staționare |
-| **Hidden size** | 32 neuroni în straturile LSTM |
+| **Hidden size** | 16 neuroni în straturile LSTM |
 | **Număr straturi** | 4 straturi LSTM (Deep LSTM) |
-| **Dropout** | 0.20 (20% regularizare) |
+| **Dropout** | 0.30 (30% regularizare) |
 | **Output** | 1 (predicția return-ului t+1) |
-| **Parametri totali** | 31,265 antrenabili |
+| **Parametri totali** | 8,465 antrenabili |
 | **Funcția de loss** | MSE (Mean Squared Error) pe return-uri |
 
 ### 4.3 Hiperparametri de antrenare
 
 | Hiperparametru | Valoare |
 | :--- | :--- |
-| **Epoci maximum** | 150 (cu early stopping, patience=50) |
+| **Epoci maximum** | 100 (cu early stopping, patience=50) |
 | **Batch size** | 32 |
 | **Learning rate** | 1e-3 (0.001) cu scheduler ReduceLROnPlateau |
 | **Optimizator** | Adam (weight decay = 1e-5) |
@@ -98,7 +98,7 @@ Graficul de mai jos prezintă evoluția funcției de pierdere (MSE) pe seturile 
 
 ![Evoluția Funcției de Pierdere](./output/loss_history.png)
 
-Se observă o scădere rapidă a pierderii în primele 15-20 de epoci, urmată de o stabilizare. Diferența dintre loss-ul de train și cel de validare indică un nivel optim de generalizare, iar early stopping-ul a oprit antrenarea la epoca 110 (cel mai bun loss pe validare fiind înregistrat la epoca 60) pentru a preveni overfitting-ul sever.
+Se observă o scădere rapidă a pierderii în primele 15-20 de epoci, urmată de o stabilizare. Diferența dintre loss-ul de train și cel de validare indică un nivel optim de generalizare, iar early stopping-ul a oprit antrenarea la epoca 68 (cel mai bun loss pe validare fiind înregistrat la epoca 18) pentru a preveni overfitting-ul sever.
 
 ### 5.2 Predicții vs Valori Reale
 Graficul compară valorile reale ale prețului Close (albastru) cu predicțiile modelului LSTM (portocaliu) pe setul de test (martie 2022 - decembrie 2025).
@@ -129,20 +129,20 @@ Performanța modelului a fost evaluată folosind mai multe metrici complementare
 
 | Metrică | Valoare | Interpretare |
 | :--- | :---: | :--- |
-| **MSE (Mean Squared Error)** | **9,08** | Eroarea pătratică medie. Penalizează puternic erorile mari. |
-| **RMSE (Root MSE)** | **3,01 USD** | Eroarea medie absolută în dolari (~1.0% din prețul mediu). |
+| **MSE (Mean Squared Error)** | **8,92** | Eroarea pătratică medie. Penalizează puternic erorile mari. |
+| **RMSE (Root MSE)** | **2,99 USD** | Eroarea medie absolută în dolari (~1.0% din prețul mediu). |
 | **MAE (Mean Absolute Error)** | **1,99 USD** | Eroarea absolută medie (mai robustă la valori extreme). |
-| **MAPE (Mean Abs % Error)** | **1,06%** | Eroarea procentuală medie absolută. |
+| **MAPE (Mean Abs % Error)** | **1,07%** | Eroarea procentuală medie absolută. |
 | **$R^2$ (Coef. de determinare)** | **0,9978** | Proporția varianței explicate (valori aproape de 1 sunt ideale). |
-| **Acuratețe direcțională** | **70,46%** | Procentul de predicții corecte ale direcției zilnice (creștere/scădere). |
+| **Acuratețe direcțională** | **70,83%** | Procentul de predicții corecte ale direcției zilnice (creștere/scădere). |
 | **Bias sistematic** | **~0,00 USD** | Media erorilor simple (pozitiv = subestimare). |
 
 ### 6.1 Interpretarea metricilor
-Modelul LSTM cu 31,265 parametri obține un RMSE de **$3.01** și un MAE de **$1.99** pe setul de test (932 zile). MAPE-ul de **1.06%** indică faptul că, în medie, predicția se abate extrem de puțin (aproximativ 1%) de la valoarea reală a acțiunii.
+Modelul LSTM cu 8,465 parametri obține un RMSE de **$2.99** și un MAE de **$1.99** pe setul de test (954 zile). MAPE-ul de **1.07%** indică faptul că, în medie, predicția se abate extrem de puțin (aproximativ 1%) de la valoarea reală a acțiunii.
 
 Coeficientul de determinare $R^2$ este **0.9978**, ceea ce înseamnă că modelul reușește să explice variația prețurilor extrem de bine pe setul de date de test (peste 99.7% din variație), datorită staționarizării caracteristicilor de intrare și prezicerii randamentelor.
 
-Acuratețea direcțională de **70.46%** este mult superioară nivelului aleatoriu (50%), confirmând că semnalul generat de rețea oferă indicații valoroase cu privire la direcția mișcării zilnice a prețului.
+Acuratețea direcțională de **70.83%** este mult superioară nivelului aleatoriu (50%), confirmând că semnalul generat de rețea oferă indicații valoroase cu privire la direcția mișcării zilnice a prețului.
 
 ---
 

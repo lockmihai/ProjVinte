@@ -32,12 +32,12 @@ def main():
     print(f"\nDevice: {device}")
 
     # ============= HYPERPARAMETERS =============
-    SEQ_LENGTH = 30  # Lookback window (30 days back)
+    SEQ_LENGTH = 8  # Lookback window (30 days back)
     HORIZON = 1
-    HIDDEN_SIZE = 32
+    HIDDEN_SIZE = 16
     NUM_LAYERS = 4  # Deep LSTM (5 layers)
-    DROPOUT = 0.2  # Higher dropout to mitigate overfitting in deep recurrent networks
-    EPOCHS = 150
+    DROPOUT = 0.3  # Higher dropout to mitigate overfitting in deep recurrent networks
+    EPOCHS = 100
     BATCH_SIZE = 32
     LEARNING_RATE = 1e-3
     WEIGHT_DECAY = 1e-5
