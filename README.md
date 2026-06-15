@@ -102,39 +102,30 @@ Erorile absolute de predicție sunt distribuite simetric în jurul valorii de 0 
 
 ## 6. Metrici de Performanță
 
-Tabelul de mai jos compară performanțele modelului baseline (care prezicea prețuri absolute) cu cele ale modelului optimizat (care prezice randamente și reconstruiește prețurile):
+Tabelul de mai jos compară performanțele modelului baseline (care prezicea prețuri absolute) cu cele ale modelului optimizat final (care prezice randamente pe o fereastră de 30 de zile cu 5 straturi LSTM și reconstruiește prețurile Close):
 
-| Metrică | Model Baseline | Model Optimizat (Reconstruit) | Interpretare |
+| Metrică | Model Baseline | Model Optimizat Final (Reconstruit, SEQ=30) | Interpretare |
 | :--- | :---: | :---: | :--- |
-| **MSE (Mean Squared Error)** | 6.478,68 | **8,9600** | Eroarea pătratică medie (penalizează deviațiile mari). |
-| **RMSE (Root MSE)** | 80,49 USD | **2,9933 USD** | Eroarea medie absolută în dolari (~1% din prețul mediu). |
-| **MAE (Mean Absolute Error)** | 57,53 USD | **1,9829 USD** | Eroarea absolută medie (mai robustă la outlieri). |
-| **MAPE (%)** | 23,82% | **1,0515%** | Eroarea procentuală medie absolută. |
-| **$R^2$ (Coef. de determinare)** | -0,5899 | **0,9978** | Proporția varianței explicate (valori aproape de 1 sunt ideale). |
-| **Acuratețe Direcțională** | 50,85% | **70,46%** | Procentul de ghicire corectă a direcției (creștere vs scădere). |
+| **MSE (Mean Squared Error)** | 6.478,68 | **8,9248** | Eroarea pătratică medie (penalizează deviațiile mari). |
+| **RMSE (Root MSE)** | 80,49 USD | **2,9874 USD** | Eroarea medie absolută în dolari (~1.3% din prețul mediu). |
+| **MAE (Mean Absolute Error)** | 57,53 USD | **2,2138 USD** | Eroarea absolută medie (mai robustă la outlieri). |
+| **MAPE (%)** | 23,82% | **1,3444%** | Eroarea procentuală medie absolută. |
+| **$R^2$ (Coef. de determinare)** | -0,5899 | **0,9634** | Proporția varianței explicate (valori aproape de 1 sunt ideale). |
+| **Acuratețe Direcțională** | 50,85% | **66,81%** | Procentul de ghicire corectă a direcției (creștere vs scădere). |
 | **Bias / Eroare Sistematică** | 57,12 USD | **~0,00 USD** | Media erorilor simple (pozitiv = subestimare sistematică). |
 
 ### 6.1 Analiza Rezultatelor
-* **Reducerea erorilor**: Trecerea la caracteristici staționare a scăzut eroarea medie absolută (MAE) de la **$57.53** la doar **$1.98**, ceea ce înseamnă că modelul prezice prețul zilei următoare cu o abatere medie de sub 2 USD pe o acțiune tranzacționată la peste 200-300 USD.
-* **Corelația R²**: Valoarea negativă a baseline-ului ($R^2 = -0.5899$) arăta că prezicerea mediei istorice era mai bună decât rețeaua. Modelul optimizat atinge un $R^2$ de **0.9978**, explicând aproape integral dinamica prețului pe date nevăzute.
-* **Acuratețea Direcțională (Trend)**: Modelul baseline performa ca o aruncare de monedă (50.85%). Modelul optimizat obține **70.46%**, o performanță remarcabilă în prognoza financiară daily, oferind un semnal puternic pentru decizii de tranzacționare.
+* **Reducerea erorilor**: Trecerea la caracteristici staționare a scăzut eroarea medie absolută (MAE) de la **$57.53** la doar **$2.21**, ceea ce înseamnă că modelul prezice prețul zilei următoare cu o abatere medie de sub 2.3 USD pe o acțiune tranzacționată la peste 200-300 USD.
+* **Corelația R²**: Valoarea negativă a baseline-ului ($R^2 = -0.5899$) arăta că prezicerea mediei istorice era mai bună decât rețeaua. Modelul optimizat final atinge un $R^2$ de **0.9634**, explicând 96.3% din dinamica prețului pe date nevăzute de test.
+* **Acuratețea Direcțională (Trend)**: Modelul baseline performa ca o aruncare de monedă (50.85%). Modelul optimizat final obține **66.81%** acuratețe direcțională pe setul de test, o performanță remarcabilă în prognoza financiară daily.
 
 ---
 
-## 7. Benchmarking Hiperparametri (LSTM 5 Straturi, 0.25 Dropout)
+## 7. Optimizarea Parametrilor Modelului Final
 
-Pentru a optimiza și mai mult modelul, am realizat un experiment comparativ (benchmark) folosind o arhitectură profundă de **5 straturi LSTM** cu un dropout ridicat la **0.25** (pentru a reduce riscul de overfitting pe rețeaua complexă). Am testat trei dimensiuni diferite ale ferestrei de analiză istorică (`SEQ_LENGTH` de 7, 15 și 30 de zile în urmă):
-
-| Fereastră (SEQ) | MSE | RMSE | MAE | MAPE (%) | R² | Acuratețe Direcțională (%) |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **7 zile** | 9.0053 | 3.0009 USD | 2.0140 USD | 1.0773% | 0.9978 | 70.02% |
-| **15 zile** | 9.0158 | 3.0026 USD | 2.0051 USD | 1.0745% | 0.9978 | **70.30%** |
-| **30 zile** | **8.9770** | **2.9962 USD** | **1.9894 USD** | **1.0551%** | **0.9978** | 70.03% |
-
-### Analiza Benchmark-ului:
-* **Eroare**: Fereastra de **30 de zile** oferă cele mai mici valori pentru toate metricile de eroare (MSE de 8.9770, MAE de 1.98 USD). Aceasta sugerează că un context istoric mai larg oferă informații suplimentare valoroase pentru prognoza randamentelor.
-* **Trend (Directional Accuracy)**: Fereastra de **15 zile** a reușit să obțină cea mai bună precizie pe trend, atingând **70.30%** acuratețe direcțională zilnică.
-* **Profunzime**: Toate cele trei configurări rulează stabil cu **5 straturi LSTM (153.153 parametri)**, demonstrând stabilitatea abordării bazate pe caracteristici staționare chiar și pe rețele neuronale de adâncime medie.
+Modelul final utilizează o arhitectură profundă formată din **5 straturi LSTM** cu un dropout de **0.25** și o fereastră istorică de lookback fixată la **30 de zile**. Această configurare a fost selectată deoarece:
+* **Context istoric extins**: O fereastră de 30 de zile permite rețelei să capteze micro-trenduri și corelații pe o lună de tranzacționare completă, reducând riscul de decizii impulsive bazate pe zgomot de scurtă durată.
+* **Regularizare robustă**: Dropout-ul ridicat la 0.25 previne overfitting-ul pe rețeaua complexă de 5 straturi (147,713 parametri antrenabili), asigurând o capacitate de generalizare stabilă pe întregul set de testare 2022-2025.
 
 ---
 
