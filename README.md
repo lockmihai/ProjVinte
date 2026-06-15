@@ -121,15 +121,32 @@ Tabelul de mai jos compară performanțele modelului baseline (care prezicea pre
 
 ---
 
-## 7. Concluzii
+## 7. Benchmarking Hiperparametri (LSTM 5 Straturi, 0.25 Dropout)
 
-1. **Importanța Staționarității**: Proiectul demonstrează că prezicerea prețurilor absolute în serii financiare non-staționare cu trend pe termen lung este ineficientă din cauza domain shift-ului. Staționarizarea input-urilor și a target-ului (predicția randamentelor) reprezintă cheia obținerii unor rezultate corecte.
-2. **Capacitatea Modelului**: Mărirea ferestrei istorice la 30 de zile și extinderea modelului la un LSTM cu 2 straturi (53.313 parametri) a oferit rețelei capacitatea necesară de a decoda pattern-uri temporale subtile în dinamica randamentelor.
-3. **Utilitate Practică**: Cu o eroare medie de ~1% și o acuratețe direcțională de peste 70%, modelul optimizat devine un instrument statistic robust ce poate fi integrat în sisteme algoritmice de tranzacționare (backtesting, gestiunea riscului).
+Pentru a optimiza și mai mult modelul, am realizat un experiment comparativ (benchmark) folosind o arhitectură profundă de **5 straturi LSTM** cu un dropout ridicat la **0.25** (pentru a reduce riscul de overfitting pe rețeaua complexă). Am testat trei dimensiuni diferite ale ferestrei de analiză istorică (`SEQ_LENGTH` de 7, 15 și 30 de zile în urmă):
+
+| Fereastră (SEQ) | MSE | RMSE | MAE | MAPE (%) | R² | Acuratețe Direcțională (%) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **7 zile** | 9.0053 | 3.0009 USD | 2.0140 USD | 1.0773% | 0.9978 | 70.02% |
+| **15 zile** | 9.0158 | 3.0026 USD | 2.0051 USD | 1.0745% | 0.9978 | **70.30%** |
+| **30 zile** | **8.9770** | **2.9962 USD** | **1.9894 USD** | **1.0551%** | **0.9978** | 70.03% |
+
+### Analiza Benchmark-ului:
+* **Eroare**: Fereastra de **30 de zile** oferă cele mai mici valori pentru toate metricile de eroare (MSE de 8.9770, MAE de 1.98 USD). Aceasta sugerează că un context istoric mai larg oferă informații suplimentare valoroase pentru prognoza randamentelor.
+* **Trend (Directional Accuracy)**: Fereastra de **15 zile** a reușit să obțină cea mai bună precizie pe trend, atingând **70.30%** acuratețe direcțională zilnică.
+* **Profunzime**: Toate cele trei configurări rulează stabil cu **5 straturi LSTM (153.153 parametri)**, demonstrând stabilitatea abordării bazate pe caracteristici staționare chiar și pe rețele neuronale de adâncime medie.
 
 ---
 
-## 8. Tehnologii Utilizate
+## 8. Concluzii
+
+1. **Importanța Staționarității**: Proiectul demonstrează că prezicerea prețurilor absolute în serii financiare non-staționare cu trend pe termen lung este ineficientă din cauza domain shift-ului. Staționarizarea input-urilor și a target-ului (predicția randamentelor) reprezintă cheia obținerii unor rezultate corecte.
+2. **Capacitatea Modelului**: Extinderea modelului la un LSTM profund cu 5 straturi (153.153 parametri) confirmă că rețelele recurente pot modela foarte bine dinamica randamentelor zilnice, reducând eroarea medie la doar ~1.05% pe setul de test.
+3. **Utilitate Practică**: Cu o eroare medie de ~1% și o acuratețe direcțională stabilă de peste 70%, modelul optimizat devine un instrument statistic robust ce poate fi integrat în sisteme algoritmice de tranzacționare (backtesting, gestiunea riscului).
+
+---
+
+## 9. Tehnologii Utilizate
 
 * **Python 3.12** - Limbajul principal de dezvoltare.
 * **PyTorch** - Framework-ul utilizat pentru definirea și antrenarea arhitecturii LSTM.
