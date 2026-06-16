@@ -37,10 +37,10 @@ def main():
     HIDDEN_SIZE = 32
     NUM_LAYERS = 4  # Deep LSTM (5 layers)
     DROPOUT = 0.2  # Higher dropout to mitigate overfitting in deep recurrent networks
-    EPOCHS = 150
-    BATCH_SIZE = 32
+    EPOCHS = 100
+    BATCH_SIZE = 16
     LEARNING_RATE = 1e-3
-    WEIGHT_DECAY = 1e-5
+    WEIGHT_DECAY = 1e-4
     PATIENCE = 50
 
     # ============= 1. LOAD DATA =============
@@ -84,6 +84,7 @@ def main():
     print("#" * 50)
 
     # ============= 3. PREPROCESS =============
+    # Add feature_cols, BB, RSI indicator and other derivedindicators to the dataframe
     print("\n[3/6] Preprocesare date...")
     data = prepare_data(
         df,
@@ -163,7 +164,13 @@ def main():
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"loss_history_seq{SEQ_LENGTH}.png"), dpi=150)
+    plt.savefig(
+        os.path.join(
+            output_dir,
+            f"loss_history_seq{SEQ_LENGTH}_hidden{HIDDEN_SIZE}_layers{NUM_LAYERS}_dropout{DROPOUT}_epochs{EPOCHS}_batch_size{BATCH_SIZE}_learning_rate{LEARNING_RATE}_weight_decay{WEIGHT_DECAY}_patience{PATIENCE}.png",
+        ),
+        dpi=150,
+    )
     plt.savefig(os.path.join(output_dir, "loss_history.png"), dpi=150)
     plt.close()
 
@@ -178,7 +185,13 @@ def main():
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"predictions_seq{SEQ_LENGTH}.png"), dpi=150)
+    plt.savefig(
+        os.path.join(
+            output_dir,
+            f"predictions_seq{SEQ_LENGTH}_hidden{HIDDEN_SIZE}_layers{NUM_LAYERS}_dropout{DROPOUT}_epochs{EPOCHS}_batch_size{BATCH_SIZE}_learning_rate{LEARNING_RATE}_weight_decay{WEIGHT_DECAY}_patience{PATIENCE}.png",
+        ),
+        dpi=150,
+    )
     plt.savefig(os.path.join(output_dir, "predictions.png"), dpi=150)
     plt.close()
 
@@ -199,7 +212,13 @@ def main():
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"scatter_seq{SEQ_LENGTH}.png"), dpi=150)
+    plt.savefig(
+        os.path.join(
+            output_dir,
+            f"scatter_seq{SEQ_LENGTH}_hidden{HIDDEN_SIZE}_layers{NUM_LAYERS}_dropout{DROPOUT}_epochs{EPOCHS}_batch_size{BATCH_SIZE}_learning_rate{LEARNING_RATE}_weight_decay{WEIGHT_DECAY}_patience{PATIENCE}.png",
+        ),
+        dpi=150,
+    )
     plt.savefig(os.path.join(output_dir, "scatter.png"), dpi=150)
     plt.close()
 
@@ -215,7 +234,13 @@ def main():
     plt.title(f"Distributia erorilor (SEQ={SEQ_LENGTH})")
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"residuals_seq{SEQ_LENGTH}.png"), dpi=150)
+    plt.savefig(
+        os.path.join(
+            output_dir,
+            f"residuals_seq{SEQ_LENGTH}_hidden{HIDDEN_SIZE}_layers{NUM_LAYERS}_dropout{DROPOUT}_epochs{EPOCHS}_batch_size{BATCH_SIZE}_learning_rate{LEARNING_RATE}_weight_decay{WEIGHT_DECAY}_patience{PATIENCE}.png",
+        ),
+        dpi=150,
+    )
     plt.savefig(os.path.join(output_dir, "residuals.png"), dpi=150)
     plt.close()
 
@@ -229,7 +254,10 @@ def main():
     )
     header = "Actual_Close,Predicted_Close,Error"
     np.savetxt(
-        os.path.join(output_dir, f"predictions_results_seq{SEQ_LENGTH}.csv"),
+        os.path.join(
+            output_dir,
+            f"predictions_results_seq{SEQ_LENGTH}_hidden{HIDDEN_SIZE}_layers{NUM_LAYERS}_dropout{DROPOUT}_epochs{EPOCHS}_batch_size{BATCH_SIZE}_learning_rate{LEARNING_RATE}_weight_decay{WEIGHT_DECAY}_patience{PATIENCE}.csv",
+        ),
         results_df,
         delimiter=",",
         header=header,
@@ -237,7 +265,10 @@ def main():
         fmt="%.4f",
     )
     np.savetxt(
-        os.path.join(output_dir, "predictions_results.csv"),
+        os.path.join(
+            output_dir,
+            f"predictions_results_seq{SEQ_LENGTH}_hidden{HIDDEN_SIZE}_layers{NUM_LAYERS}_dropout{DROPOUT}_epochs{EPOCHS}_batch_size{BATCH_SIZE}_learning_rate{LEARNING_RATE}_weight_decay{WEIGHT_DECAY}_patience{PATIENCE}.csv",
+        ),
         results_df,
         delimiter=",",
         header=header,

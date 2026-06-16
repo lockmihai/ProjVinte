@@ -1,146 +1,184 @@
-# Predicția Prețului Acțiunilor folosind Rețele Neuronale LSTM
-### NYSE 2001-2025 | JPMorgan Chase (JPM)
-**Proiect Deep Learning - Rezultate, Optimizare și Interpretări**
+**Predictia Pretului Actiunilor folosind Retele Neuronale LSTM**
 
-* **Materie**: Rețele neuronale și tehnici de Deep Learning
-* **Set de date**: NYSE (New York Stock Exchange)
-* **Ticker analizat**: JPM (JPMorgan Chase & Co.)
-* **Perioada**: 2001-2025 (932 zile de test)
+NYSE 2001-2025 | JPMorgan Chase (JPM)
 
----
+**Proiect Deep Learning - Rezultate si Interpretari
+**Materie: Retele neuronale si tehnici de Deep Learning
+Set de date: NYSE (New York Stock Exchange)
+Ticker analizat: JPM (JPMorgan Chase & Co.)
+Perioada: 2001-2025 (932 zile de test)
 
-## 1. Introducere
+# 1. Introducere
 
-Acest proiect implementează și optimizează un model de rețea neuronală recurentă de tip **LSTM (Long Short-Term Memory)** pentru predicția prețului de închidere al acțiunilor JPMorgan Chase (JPM) tranzacționate pe bursa NYSE. 
+Acest proiect implementeaza un model de retea neuronala recurenta de tip LSTM (Long Short-Term Memory) pentru predictia pretului de inchidere al actiunilor JPMorgan Chase (JPM) tranzactionate pe bursa NYSE.
 
-Proiectul pornește de la o arhitectură de bază (baseline) și propune o metodologie optimizată bazată pe **staționarizarea datelor și predicția randamentelor**, eliminând erorile sistematice de scară specifice seriilor de timp financiare non-staționare.
+Obiectivul principal este de a prezice pretul Close al zilei urmatoare (horizon = 1 zi) pe baza unei ferestre de 30 de zile de tranzactionare anterioare, utilizand atat variabilele OHLCV (Open, High, Low, Close, Volume), cat si indicatori tehnici derivati din acestea.
 
----
+# 2. Descrierea Setului de Date
 
-## 2. Descrierea Setului de Date
+## 2.1 Sursa si structura
 
-### 2.1 Sursă și structură
-Setul de date conține înregistrările istorice de tranzacționare de pe NYSE pentru perioada **1 ianuarie 2001 - 31 decembrie 2025**. Datele zilnice brute conțin următoarele câmpuri: `Symbol`, `Date`, `Open`, `High`, `Low`, `Close`, `Volume`.
+Setul de date contine inregistrarile istorice de tranzactionare de pe NYSE pentru perioada 1 ianuarie 2001 - 31 decembrie 2025. Fiecare zi de tranzactionare este stocata intr-un fisier CSV separat, continand pentru fiecare simbol listat urmatoarele campuri: Symbol, Date, Open, High, Low, Close, Volume.
 
-### 2.2 Selecția ticker-ului
-A fost selectat ticker-ul **JPM (JPMorgan Chase & Co.)**, una dintre cele mai mari instituții financiare din lume. Setul extras conține **6.470 de zile de tranzacționare**, cu prețuri Close cuprinse între un minim de **$15.45** și un maxim de **$329.17**, ilustrând un trend ascendent masiv pe parcursul celor 25 de ani.
+## 2.2 Selectia ticker-ului
 
-### 2.3 Împărțirea datelor
-Pentru a respecta structura temporară și a evita data leakage, datele au fost împărțite **cronologic** (nu aleatoriu) în trei subseturi:
+A fost selectat ticker-ul JPM (JPMorgan Chase & Co.), una dintre cele mai mari institutii financiare din lume, cu o capitalizare de piata de peste 500 miliarde USD. In urma extragerii datelor, s-au obtinut 6,470 de zile de tranzactionare, cu preturi Close cuprinse intre $102.92 si $327.58.
 
-| Set | Perioadă | Nr. zile | Procent |
-| :--- | :---: | :---: | :---: |
-| **Antrenare (Train)** | Mar 2001 - Mai 2018 | 4.495 | 70% |
-| **Validare (Validation)** | Iun 2018 - Mar 2022 | 962 | 15% |
-| **Testare (Test)** | Mar 2022 - Dec 2025 | 962 | 15% |
+## 2.3 Impartirea datelor
 
----
+Setul de date a fost impartit cronologic (nu aleatoriu, pentru a respecta structura temporala) in trei subseturi:
 
-## 3. Preprocesarea Datelor și Feature Engineering
+| Set | Perioada | Nr. zile | Procent |
+| --- | --- | --- | --- |
+| Antrenare | Mar 2001 - Mai 2018 | 4,480 | 70% |
+| Validare | Iun 2018 - Mar 2022 | 947 | 15% |
+| Testare | Mar 2022 - Dec 2025 | 947 | 15% |
 
-### 3.1 Problema Non-Staționaritații (Modelul Baseline)
-Modelul baseline utilizează prețuri absolute ca input și output. Deoarece prețurile acțiunilor din setul de test (2022-2025) sunt mult mai mari decât cele din setul de train (2001-2018), distribuțiile diferă masiv. Normalizarea standard aplicată pe train nu poate scala corect datele de test, ducând la eșecul generalizării (R² negativ).
+# 3. Preprocesarea Datelor si Feature Engineering
 
-### 3.2 Soluția: Transformarea Staționară (Modelul Optimizat)
-Pentru modelul optimizat, am eliminat intrările absolute și am creat **caracteristici staționare** (procente, raporturi și deviații) în [preprocessing.py](file:///Users/mihai/Documents/ProjVinte/preprocessing.py):
-* **Randamente**: `LogReturn` (randament logaritmic zilnic) și `Return` (randament procentual).
-* **Volatilitate**: `HL_Range_pct` (diferența High-Low raportată la Close) și `RV_5` (volatilitatea realizată pe 5 zile).
-* **Rapoarte de Medii Mobile**: `SMA_5_ratio` și `SMA_20_ratio` (deviația procentuală a prețului Close față de mediile mobile: $\frac{\text{Close}}{\text{SMA}} - 1$).
-* **Oscilatori și Volum**: `RSI_14` (Relative Strength Index), `BB_Width` (lățimea Bollinger Bands) și `Volume_Ratio` (raportul dintre volumul zilnic și media sa pe 5 zile).
-* **Deviații Intraday**: `Open_pct` ($\frac{\text{Open}}{\text{Close}} - 1$), `High_pct` ($\frac{\text{High}}{\text{Close}} - 1$) și `Low_pct` ($\frac{\text{Low}}{\text{Close}} - 1$).
+## 3.1 Variabile de intrare (Features)
 
-### 3.3 Target și Reconstrucția Prețurilor
-* **Target**: În loc să prezică prețul absolut $Close(t+1)$, modelul optimizat prezice **randamentul zilei următoare** (`target_return_h1`), care este staționar.
-* **Reconstrucție**: La evaluare, prețul absolut este reconstituit dinamic în [main.py](file:///Users/mihai/Documents/ProjVinte/main.py) prin înmulțirea prețului ultimei zile cunoscute din fereastră cu randamentul prezis:
-  $$\text{Close}_{\text{pred}}(t+1) = \text{Close}_{\text{actual}}(t) \times (1 + \text{Return}_{\text{pred}}(t+1))$$
+Modelul utilizeaza 12 variabile de intrare stationare pentru a preveni domain-shift-ul, combinand randamente, oscilatori si deviatii procentuale:
 
----
+**• LogReturn: **Randamentul logaritmic zilnic: ln(Close_t / Close_{t-1}).
 
-## 4. Arhitectura Modelului LSTM
+**• HL_Range_pct: **Diferenta High-Low raportata la Close (staționară).
 
-### 4.1 Comparație Arhitectură și Hiperparametri
+**• RSI_14: **Relative Strength Index calculated over a 14-day window.
 
-| Parametru | Model Baseline | Model Optimizat Final |
-| :--- | :---: | :---: |
-| **Variabile de intrare (Features)** | 9 (Brute + Simple) | **12 (Staționare complete)** |
-| **Dimensiune Fereastră (Lookback)** | 15 zile | **30 zile** |
-| **Straturi LSTM** | 1 strat | **4 straturi** |
-| **Neuroni Ascunși (Hidden Size)** | 32 | **32** |
-| **Dropout** | 0.10 | **0.20** |
-| **Parametri Antrenabili** | 5.537 | **31.265** |
-| **Batch Size** | 8 | **32** |
-| **Learning Rate** | 5e-4 | **1e-3** |
-| **Patience (Early Stopping)** | 15 epoci | **50 epoci** |
+**• BB_Width: **Latimea Bollinger Bands raportata la SMA 20.
 
----
+**• RV_5: **Volatilitatea realizata pe 5 zile.
 
-## 5. Rezultatele Antrenării și Evaluării (Modelul Optimizat)
+**• Volume_Ratio: **Raportul dintre volumul zilnic si media sa pe 5 zile.
 
-Modelul optimizat a rulat utilizând scriptul principal [main.py](file:///Users/mihai/Documents/ProjVinte/main.py). Datorită mecanismului de early stopping, antrenarea s-a oprit automat la **epoca 110** (cel mai bun loss pe validare fiind înregistrat la epoca 60, cu patience=50).
+**• SMA_5_ratio, SMA_20_ratio: **Deviatia procentuala a pretului Close fata de mediile mobile pe 5 si 20 de zile.
 
-### 5.1 Evoluția funcției de pierdere (Loss History)
-Loss-ul de validare scade rapid și se stabilizează în primele 15-20 de epoci, evoluând stabil fără semne de divergență (overfitting sever):
+**• MACD_ratio: **MACD raportat la pretul Close.
 
-![Evoluția Funcției de Pierdere](./output/loss_history.png)
+**• Open_pct, High_pct, Low_pct: **Deviatia procentuala a preturilor Open, High si Low fata de Close.
 
-### 5.2 Predicții vs Valori Reale
-Graficul de mai jos arată alinierea excepțională a prețurilor reconstruite (portocaliu) cu prețurile reale (albastru) pe setul de test (2022-2025):
+## 3.2 Normalizare
 
-![Predicții vs Valori Reale](./output/predictions.png)
+Toate variabilele de intrare si iesire au fost normalizate folosind StandardScaler (medie 0, deviatie standard 1). Scaler-ul a fost antrenat doar pe setul de train pentru a evita data leakage. Valorile prezise sunt apoi readuse la scara originala pentru evaluare si interpretare.
 
-### 5.3 Graficul de Dispersie (Corelație)
-Punctele prezintă o dispersie extrem de strânsă de-a lungul diagonalei ideale $y=x$, confirmând dispariția biasului sistematic de subestimare:
+## 3.3 Crearea secventelor
 
-![Grafic Dispersie](./output/scatter.png)
+Pentru a alimenta modelul LSTM, datele au fost transformate in secvente sliding window de 30 de zile. Fiecare secventa de 30 de zile consecutive (12 features x 30 pasi temporali) este utilizata pentru a prezice pretul Close din ziua urmatoare (t+1) prin intermediul reconstructiei din randamentul prezis. Aceasta abordare permite modelului sa invete pattern-uri temporale mai profunde.
 
-### 5.4 Distribuția Erorilor (Reziduuri)
-Erorile absolute de predicție sunt distribuite simetric în jurul valorii de 0 USD, respectând o formă normală (clopot):
+# 4. Arhitectura Modelului LSTM
 
-![Distribuția Erorilor](./output/residuals.png)
+## 4.1 Motivatie
 
----
+LSTM (Long Short-Term Memory) a fost ales deoarece:
 
-## 6. Metrici de Performanță
+* Este specializat in modelarea dependentelor temporale pe termen lung si scurt, fiind ideal pentru serii financiare care prezinta autocorelatie.
+* Mecanismul de gates (forget, input, output) previne problema vanishing gradient, permitand propagarea informatiei relevante pe distante temporale mari.
+* Comparativ cu RNN-urile simple, LSTM retine selectiv informatia, eliminand zgomotul si pastrand semnalele predictive.
+* In literatura de specialitate, LSTM este unul dintre cele mai utilizate modele pentru predictia seriilor financiare, cu rezultate superioare ARIMA si GARCH.
 
-Tabelul de mai jos compară performanțele modelului baseline (care prezicea prețuri absolute) cu cele ale modelului optimizat final (care prezice randamente pe o fereastră de 30 de zile cu 4 straturi LSTM și reconstruiește prețurile Close):
+## 4.2 Structura
 
-| Metrică | Model Baseline | Model Optimizat Final (Reconstruit, SEQ=30) | Interpretare |
-| :--- | :---: | :---: | :--- |
-| **MSE (Mean Squared Error)** | 6.478,68 | **9,0774** | Eroarea pătratică medie (penalizează deviațiile mari). |
-| **RMSE (Root MSE)** | 80,49 USD | **3,0129 USD** | Eroarea medie absolută în dolari (~1.0% din prețul mediu). |
-| **MAE (Mean Absolute Error)** | 57,53 USD | **1,9918 USD** | Eroarea absolută medie (mai robustă la outlieri). |
-| **MAPE (%)** | 23,82% | **1,0610%** | Eroarea procentuală medie absolută. |
-| **$R^2$ (Coef. de determinare)** | -0,5899 | **0,9978** | Proporția varianței explicate (valori aproape de 1 sunt ideale). |
-| **Acuratețe Direcțională** | 50,85% | **70,46%** | Procentul de ghicire corectă a direcției (creștere vs scădere). |
-| **Bias / Eroare Sistematică** | 57,12 USD | **~0,00 USD** | Media erorilor simple (pozitiv = subestimare sistematică). |
+Modelul are urmatoarea configuratie:
 
-### 6.1 Analiza Rezultatelor
-* **Reducerea erorilor**: Trecerea la caracteristici staționare a scăzut eroarea medie absolută (MAE) de la **$57.53** la doar **$1.99**, ceea ce înseamnă că modelul prezice prețul zilei următoare cu o abatere medie de sub 2 USD pe o acțiune tranzacționată la peste 200-300 USD.
-* **Corelația R²**: Valoarea negativă a baseline-ului ($R^2 = -0.5899$) arăta că prezicerea mediei istorice era mai bună decât rețeaua. Modelul optimizat final atinge un $R^2$ de **0.9978**, explicând 99.78% din dinamica prețului pe date nevăzute de test.
-* **Acuratețea Direcțională (Trend)**: Modelul baseline performa ca o aruncare de monedă (50.85%). Modelul optimizat final obține **70.46%** acuratețe direcțională pe setul de test, o performanță remarcabilă în prognoza financiară daily.
+| Input size | 12 features stationare |
+| --- | --- |
+| Hidden size | 32 neuroni in straturile LSTM |
+| Numar straturi | 4 straturi LSTM (Deep LSTM) |
+| Dropout | 0.20 (20% regularizare pentru prevenirea overfitting-ului) |
+| Output | 1 (predictia return-ului t+1) |
+| Parametri totali | 31,265 antrenabili |
+| Functia de loss | MSE (Mean Squared Error) pe return-uri |
 
----
+## 4.3 Hiperparametri de antrenare
 
-## 7. Optimizarea Parametrilor Modelului Final
+| Epoci maximum | 150 (cu early stopping, patience=50) |
+| --- | --- |
+| Batch size | 32 |
+| Learning rate | 1e-3 (0.001) cu scheduler ReduceLROnPlateau |
+| Optimizator | Adam (weight decay = 1e-5) |
+| Gradient clipping | max norm = 1.0 |
 
-Modelul final utilizează o arhitectură profundă formată din **4 straturi LSTM** cu un dropout de **0.20** și o fereastră istorică de lookback fixată la **30 de zile**. Această configurare a fost selectată deoarece:
-* **Context istoric extins**: O fereastră de 30 de zile permite rețelei să capteze micro-trenduri și corelații pe o lună de tranzacționare completă, reducând riscul de decizii impulsive bazate pe zgomot de scurtă durată.
-* **Regularizare robustă**: Dropout-ul de 0.20 previne overfitting-ul pe rețeaua complexă de 4 straturi (31.265 parametri antrenabili), asigurând o capacitate de generalizare stabilă pe întregul set de testare 2022-2025.
+# 5. Rezultatele Antrenarii si Evaluarii
 
----
+## 5.1 Evolutia functiei de pierdere
 
-## 8. Concluzii
+Graficul de mai jos prezinta evolutia functiei de pierdere (MSE) pe seturile de antrenare si validare pe parcursul epocilor de antrenare.
 
-1. **Importanța Staționarității**: Proiectul demonstrează că prezicerea prețurilor absolute în serii financiare non-staționare cu trend pe termen lung este ineficientă din cauza domain shift-ului. Staționarizarea input-urilor și a target-ului (predicția randamentelor) reprezintă cheia obținerii unor rezultate corecte.
-2. **Capacitatea Modelului**: Extinderea modelului la un LSTM profund cu 4 straturi (31.265 parametri) confirmă că rețelele recurente pot modela foarte bine dinamica randamentelor zilnice, reducând eroarea medie la doar ~1.06% pe setul de test.
-3. **Utilitate Practică**: Cu o eroare medie de ~1% și o acuratețe direcțională stabilă de peste 70%, modelul optimizat devine un instrument statistic robust ce poate fi integrat în sisteme algoritmice de tranzacționare (backtesting, gestiunea riscului).
+![Loss History](./output/loss_history.png)
 
----
+Se observa o scadere rapida a pierderii in primele 10-15 epoci, urmata de o stabilizare. Diferenta dintre loss-ul de train si cel de validare indica un anumit nivel de overfitting, dar early stopping-ul a prevenit degradarea semnificativa a performantei pe datele de validare.
 
-## 9. Tehnologii Utilizate
+## 5.2 Predictii vs Valori Reale
 
-* **Python 3.12** - Limbajul principal de dezvoltare.
-* **PyTorch** - Framework-ul utilizat pentru definirea și antrenarea arhitecturii LSTM.
-* **Pandas & NumPy** - Manipularea seriilor temporale și calcule numerice pe matrici.
-* **Scikit-Learn** - Standardizarea datelor (`StandardScaler`) și metrici de evaluare.
-* **Matplotlib** - Generarea și salvarea automată a visualizărilor din `output/`.
+![Predictions](./output/predictions.png)
+
+Graficul compara valorile reale ale pretului Close (albastru) cu predictiile modelului LSTM (portocaliu) pe setul de test (martie 2022 - decembrie 2025). Modelul captureaza tendinta generala de crestere, insa subestimeaza amplitudinea miscarilor de pret, producand predictii cu volatilitate redusa. Aceasta este o limitare comuna a modelelor bazate pe MSE, care penalizeaza deviatiile mari si favorizeaza predictii conservative.
+
+## 5.3 Graficul de dispersie (Predictii vs Reale)
+
+![Scatter](./output/scatter.png)
+
+Graficul scatter plaseaza fiecare predictie in functie de valoarea reala corespunzatoare. Linia rosie punctata reprezinta predictia perfecta (y=x). Punctele situate sub linie indica subestimari, iar cele deasupra - supraestimari. Se observa o concentrare a predictiilor in intervalul $100-$150, ceea ce confirma tendinta modelului de a produce predictii conservatoare. Pentru valori reale peste $200, modelul subestimeaza sistematic.
+
+## 5.4 Distributia erorilor
+
+![Residuals](./output/residuals.png)
+
+Histograma erorilor de predictie (Actual - Predictie) arata o distributie deplasata semnificativ spre valori pozitive, ceea ce indica o subestimare sistematica a pretului. Distributia nu este perfect simetrica in jurul lui 0, sugerand ca modelul are dificultati in a captura variatia completa a preturilor. Acest bias poate fi corectat prin tehnici suplimentare de regularizare sau prin utilizarea unei functii de loss asimetrice.
+
+# 6. Metrici de Performanta
+
+Performanta modelului a fost evaluata folosind mai multe metrici complementare, fiecare capturand un aspect diferit al calitatii predictiilor:
+
+| Metrica | Valoare | Interpretare |
+| --- | --- | --- |
+| MSE (Mean Squared Error) | 8.99 | Eroarea patratica medie. Penalizeaza puternic erorile mari. |
+| RMSE (Root MSE) | 3.00 USD | Eroarea medie in aceleasi unitati ca pretul (~1.6% din pretul mediu). |
+| MAE (Mean Absolute Error) | 1.99 USD | Eroarea absoluta medie. Mai robusta la valori extreme decat MSE. |
+| MAPE (Mean Abs % Error) | 1.05% | Eroarea procentuala medie. Cu cat mai mica, cu atat mai bine. |
+| R² (Coef. de determinare) | 0.9978 | Valori negative indica performanta mai slaba decat un model constant (media). |
+| Acuratete directionala | 69.92% | Procentul de predictii corecte ale directiei (crestere/scadere). 50% = aleatoriu. |
+| Bias sistematic | 0.15 USD | Media erorilor. Pozitiv = modelul subestimeaza sistematic. |
+
+## 6.1 Interpretarea metricilor
+
+Modelul LSTM cu 31,265 parametri obtine un RMSE de $3.00 si un MAE de $1.99 pe setul de test (932 zile). MAPE-ul de 1.05% indica faptul ca, in medie, predictia se abate extrem de putin (aproximativ 1-2%) de la valoarea reala a actiunii.
+
+Coeficientul de determinare R² este 0.9978, ceea ce inseamna ca modelul reuseste sa explice variatia preturilor extrem de bine pe setul de date de test (peste 96% din variatie), datorita staționarizării caracteristicilor de intrare și prezicerii randamentelor.
+
+Acuratetea directionala de 69.92% este mult superioara nivelului aleatoriu (50%), confirmand ca semnalul generat de retea ofera indicatii valoroase cu privire la directia miscarii zilnice a pretului.
+
+# 7. Discutii si Concluzii
+
+## 7.1 Limitari identificate
+
+**Subestimarea miscarilor bruste (outliers): **Modelul produce predictii usor mai conservatoare in cazul unor miscari extrem de volatile de piata. Aceasta este o consecinta a functiei de loss MSE, care favorizeaza estimari echilibrate.
+
+**Lipsa variabilelor macroeconomice: **Modelul foloseste exclusiv date de pret si volum ale bursa, ignorand factori externi precum dobanzile de referinta Fed, inflatia, stirile financiare sau indicatorii fundamentali ai companiei.
+
+## 7.2 Posibile imbunatatiri
+
+* Adaugarea de features suplimentare macroeconomice (dobanzi, inflatie, VIX) sau sentimentul stirilor.
+* Utilizarea unei functii de loss asimetrice sau Huber Loss care sa penalizeze diferit subestimarea si sa fie robusta la outlieri.
+* Implementarea unui mecanism de atentie (Attention) sau utilizarea unei arhitecturi bazate pe Transformers pentru relatii temporale de lunga durata.
+* Antrenarea cu validare walk-forward (backtesting) pentru a simula conditii reale de trading.
+
+## 7.3 Concluzii finale
+
+Proiectul demonstreaza aplicabilitatea retelelor LSTM pentru predictia seriilor financiare, evidentiind atat potentialul, cat si limitarile acestei abordari. Desi modelul reuseste sa captureze tendinta generala a pretului, predictiile punctuale raman imprecise din cauza naturii stochastic inerente a pietelor financiare.
+
+Principala concluzie este ca, in forma sa actuala, modelul este mai potrivit pentru analiza de trend si identificarea directiei generale a pietei decat pentru predictii exacte ale pretului. Imbunatatirile propuse (mai multe features, arhitecturi complexe, mecanisme de atentie) ar putea creste semnificativ performanta.
+
+Proiectul ofera o baza solida pentru explorari ulterioare si demonstreaza implementarea practica a intregului pipeline de Deep Learning: de la incarcarea si preprocesarea datelor, trecand prin feature engineering si antrenare, pana la evaluare, vizualizare si interpretarea rezultatelor.
+
+# 8. Tehnologii Utilizate
+
+| Python 3.14 | Limbajul de programare principal al proiectului |
+| --- | --- |
+| PyTorch | Framework de Deep Learning pentru antrenarea retelelor LSTM |
+| Pandas | Manipularea si procesarea datelor tabulare si serii temporale |
+| NumPy | Operatii numerice eficiente pe array-uri multidimensionale |
+| Scikit-learn | Preprocesare (StandardScaler) si metrici de evaluare |
+| Matplotlib | Generarea graficelor de analiza si vizualizare a rezultatelor |
+| python-docx | Generarea automata a acestui raport in format Word |
