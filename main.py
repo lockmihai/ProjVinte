@@ -27,21 +27,26 @@ def main():
     print("  NYSE 2001-2025 | JPMorgan Chase (JPM)")
     print("=" * 60)
 
-    # Use GPU (CUDA) if available, otherwise fallback to CPU
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # Use GPU (CUDA or MPS for Apple Silicon) if available, otherwise fallback to CPU
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif torch.backends.mps.is_available():
+        device = "mps"
+    else:
+        device = "cpu"
     print(f"\nDevice: {device}")
 
     # ============= HYPERPARAMETERS =============
     SEQ_LENGTH = 30  # Lookback window (30 days back)
     HORIZON = 1
     HIDDEN_SIZE = 16
-    NUM_LAYERS = 8  # Deep LSTM (5 layers)
+    NUM_LAYERS = 4  # Deep LSTM (5 layers)
     DROPOUT = 0.2  # Higher dropout to mitigate overfitting in deep recurrent networks
-    EPOCHS = 100
-    BATCH_SIZE = 16
-    LEARNING_RATE = 2e-4
+    EPOCHS = 150
+    BATCH_SIZE = 32
+    LEARNING_RATE = 1e-3
     WEIGHT_DECAY = 1e-5
-    PATIENCE = 50
+    PATIENCE = 25
 
     # ============= 1. LOAD DATA =============
     print("\n[1/6] Incarcare date...")
@@ -80,7 +85,7 @@ def main():
     print(f"  Target:   Return (t+1)")
 
     print("\n" + "#" * 50)
-    print(f" EXPERIMENT: SEQ_LENGTH = {SEQ_LENGTH} zile, LSTM {NUM_LAYERS} straturi")
+    print(f" EXPERIMENT: SEQ_LENGTH = {SEQ_LENGTH} zile, LSTM {NUM_LAYERS} straturi, Hidden size {HIDDEN_SIZE}. learning rate {LEARNING_RATE}, batch size {BATCH_SIZE}, dropout {DROPOUT}")
     print("#" * 50)
 
     # ============= 3. PREPROCESS =============
@@ -163,7 +168,7 @@ def main():
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"loss_history_seq{SEQ_LENGTH}.png"), dpi=150)
+    plt.savefig(os.path.join(output_dir, f"loss_history_seq{SEQ_LENGTH}_{NUM_LAYERS}_{HIDDEN_SIZE}_{LEARNING_RATE}_{BATCH_SIZE}_{DROPOUT}.png"), dpi=150)
     plt.savefig(os.path.join(output_dir, "loss_history.png"), dpi=150)
     plt.close()
 
@@ -178,7 +183,7 @@ def main():
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"predictions_seq{SEQ_LENGTH}.png"), dpi=150)
+    plt.savefig(os.path.join(output_dir, f"predictions_seq{SEQ_LENGTH}_{NUM_LAYERS}_{HIDDEN_SIZE}_{LEARNING_RATE}_{BATCH_SIZE}_{DROPOUT}.png"), dpi=150)
     plt.savefig(os.path.join(output_dir, "predictions.png"), dpi=150)
     plt.close()
 
@@ -199,7 +204,7 @@ def main():
     plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"scatter_seq{SEQ_LENGTH}.png"), dpi=150)
+    plt.savefig(os.path.join(output_dir, f"scatter_seq{SEQ_LENGTH}_{NUM_LAYERS}_{HIDDEN_SIZE}_{LEARNING_RATE}_{BATCH_SIZE}_{DROPOUT}.png"), dpi=150)
     plt.savefig(os.path.join(output_dir, "scatter.png"), dpi=150)
     plt.close()
 
@@ -215,7 +220,7 @@ def main():
     plt.title(f"Distributia erorilor (SEQ={SEQ_LENGTH})")
     plt.grid(alpha=0.3)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f"residuals_seq{SEQ_LENGTH}.png"), dpi=150)
+    plt.savefig(os.path.join(output_dir, f"residuals_seq{SEQ_LENGTH}_{NUM_LAYERS}_{HIDDEN_SIZE}_{LEARNING_RATE}_{BATCH_SIZE}_{DROPOUT}.png"), dpi=150)
     plt.savefig(os.path.join(output_dir, "residuals.png"), dpi=150)
     plt.close()
 
@@ -229,7 +234,7 @@ def main():
     )
     header = "Actual_Close,Predicted_Close,Error"
     np.savetxt(
-        os.path.join(output_dir, f"predictions_results_seq{SEQ_LENGTH}.csv"),
+        os.path.join(output_dir, f"predictions_results_seq{SEQ_LENGTH}_{NUM_LAYERS}_{HIDDEN_SIZE}_{LEARNING_RATE}_{BATCH_SIZE}_{DROPOUT}.csv"),
         results_df,
         delimiter=",",
         header=header,

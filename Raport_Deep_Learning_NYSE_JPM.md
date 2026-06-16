@@ -157,28 +157,28 @@ Performanta modelului a fost evaluata folosind mai multe metrici complementare, 
   ---------------------------------------------------------------------------------------------------------------------------------------
   **Metrica**                 **Valoare**             **Interpretare**
   --------------------------- ----------------------- -----------------------------------------------------------------------------------
-  MSE (Mean Squared Error)    9.02                    Eroarea patratica medie. Penalizeaza puternic erorile mari.
+  MSE (Mean Squared Error)    8.98                    Eroarea patratica medie. Penalizeaza puternic erorile mari.
 
   RMSE (Root MSE)             3.00 USD                Eroarea medie in aceleasi unitati ca pretul (\~1.6% din pretul mediu).
 
-  MAE (Mean Absolute Error)   2.00 USD                Eroarea absoluta medie. Mai robusta la valori extreme decat MSE.
+  MAE (Mean Absolute Error)   1.99 USD                Eroarea absoluta medie. Mai robusta la valori extreme decat MSE.
 
-  MAPE (Mean Abs % Error)     1.06%                   Eroarea procentuala medie. Cu cat mai mica, cu atat mai bine.
+  MAPE (Mean Abs % Error)     1.05%                   Eroarea procentuala medie. Cu cat mai mica, cu atat mai bine.
 
   R² (Coef. de determinare)   0.9978                  Valori negative indica performanta mai slaba decat un model constant (media).
 
-  Acuratete directionala      70.46%                  Procentul de predictii corecte ale directiei (crestere/scadere). 50% = aleatoriu.
+  Acuratete directionala      69.60%                  Procentul de predictii corecte ale directiei (crestere/scadere). 50% = aleatoriu.
 
-  Bias sistematic             0.23 USD                Media erorilor. Pozitiv = modelul subestimeaza sistematic.
+  Bias sistematic             -0.02 USD               Media erorilor. Pozitiv = modelul subestimeaza sistematic.
   ---------------------------------------------------------------------------------------------------------------------------------------
 
 ## 6.1 Interpretarea metricilor
 
-Modelul LSTM cu 31,265 parametri obtine un RMSE de \$3.00 si un MAE de \$2.00 pe setul de test (932 zile). MAPE-ul de 1.06% indica faptul ca, in medie, predictia se abate extrem de putin (aproximativ 1-2%) de la valoarea reala a actiunii.
+Modelul LSTM cu 31,265 parametri obtine un RMSE de \$3.00 si un MAE de \$1.99 pe setul de test (932 zile). MAPE-ul de 1.05% indica faptul ca, in medie, predictia se abate extrem de putin (aproximativ 1-2%) de la valoarea reala a actiunii.
 
 Coeficientul de determinare R² este 0.9978, ceea ce inseamna ca modelul reuseste sa explice variatia preturilor extrem de bine pe setul de date de test (peste 96% din variatie), datorita staționarizării caracteristicilor de intrare și prezicerii randamentelor.
 
-Acuratetea directionala de 70.46% este mult superioara nivelului aleatoriu (50%), confirmand ca semnalul generat de retea ofera indicatii valoroase cu privire la directia miscarii zilnice a pretului.
+Acuratetea directionala de 69.60% este mult superioara nivelului aleatoriu (50%), confirmand ca semnalul generat de retea ofera indicatii valoroase cu privire la directia miscarii zilnice a pretului.
 
 # 7. Discutii si Concluzii
 
