@@ -150,7 +150,7 @@ def load_jpm_data() -> pd.DataFrame:
     """
     Convenience wrapper: incearca fisierul pre-extras, apoi folderele/ZIP-urile / Convenience wrapper: tries the pre-extracted JPM file first, and falls back to full extraction.
     """
-    fast_path = os.path.join(DATA_DIR, '..', 'data_jpm_full.csv')
+    fast_path = os.path.normpath(os.path.join(DATA_DIR, '..', 'data_jpm_full.csv'))
     if os.path.exists(fast_path):
         return load_ticker_data_from_csv(fast_path)
     return load_ticker_data('JPM')

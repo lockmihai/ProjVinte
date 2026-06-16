@@ -35,11 +35,11 @@ def main():
     SEQ_LENGTH = 30  # Lookback window (30 days back)
     HORIZON = 1
     HIDDEN_SIZE = 16
-    NUM_LAYERS = 4  # Deep LSTM (5 layers)
-    DROPOUT = 0.3  # Higher dropout to mitigate overfitting in deep recurrent networks
+    NUM_LAYERS = 8  # Deep LSTM (5 layers)
+    DROPOUT = 0.2  # Higher dropout to mitigate overfitting in deep recurrent networks
     EPOCHS = 100
-    BATCH_SIZE = 32
-    LEARNING_RATE = 1e-3
+    BATCH_SIZE = 16
+    LEARNING_RATE = 2e-4
     WEIGHT_DECAY = 1e-5
     PATIENCE = 50
 

@@ -116,7 +116,7 @@ def train_model(model: nn.Module,
             patience_counter += 1
 
         # Periodically log training and validation metrics
-        if (epoch + 1) % 25 == 0 or epoch == 0:
+        if (epoch + 1) % 10 == 0 or epoch == 0:
             current_lr = optimizer.param_groups[0]['lr']
             print(f"  Epoch {epoch+1:3d}/{epochs} | "
                   f"Train: {avg_train_loss:.6f} | Val: {avg_val_loss:.6f} | "
