@@ -4,6 +4,8 @@ Punctul de intrare principal al proiectului (v3 - echilibrat) / Main entry point
 NYSE 2001-2025 | JPM (JPMorgan Chase)
 Model: LSTM - predictie pret de inchidere (Close) / LSTM model for predicting stock close price.
 """
+
+import matplotlib.pyplot as plt
 import torch
 import numpy as np
 import os
@@ -56,112 +58,210 @@ def main():
     # Compute derived indicators (RSI, Bollinger Bands, Moving Averages, Volatility, Volume Ratio)
     df = add_technical_indicators(df)
     # Generate shifting targets for regression and classification tasks
-    df = create_targets(df, target_col='Close', horizons=[HORIZON])
+    df = create_targets(df, target_col="Close", horizons=[HORIZON])
 
     # STATIONARY INPUT FEATURES
-    # We use ratios and returns instead of absolute prices to prevent domain-shift 
+    # We use ratios and returns instead of absolute prices to prevent domain-shift
     # where future prices (e.g. 2022-2025) are at completely different scales than historical prices (2001-2018).
     feature_cols = [
-        'LogReturn', 'HL_Range_pct', 'RSI_14', 'BB_Width',
-        'RV_5', 'Volume_Ratio', 'SMA_5_ratio', 'SMA_20_ratio',
-        'MACD_ratio', 'Open_pct', 'High_pct', 'Low_pct',
+        "LogReturn",
+        "HL_Range_pct",
+        "RSI_14",
+        "BB_Width",
+        "RV_5",
+        "Volume_Ratio",
+        "SMA_5_ratio",
+        "SMA_20_ratio",
+        "MACD_ratio",
+        "Open_pct",
+        "High_pct",
+        "Low_pct",
     ]
     # STATIONARY TARGET
     # Predicting the future return instead of the absolute stock Close price.
-    target_cols = [f'target_return_h{HORIZON}']
+    target_cols = [f"target_return_h{HORIZON}"]
 
     print(f"  Features: {len(feature_cols)}")
     print(f"  Target:   Return (t+1)")
 
+    print("\n" + "#" * 50)
+    print(f" EXPERIMENT: SEQ_LENGTH = {SEQ_LENGTH} zile, LSTM {NUM_LAYERS} straturi, Hidden size {HIDDEN_SIZE}. learning rate {LEARNING_RATE}, batch size {BATCH_SIZE}, dropout {DROPOUT}")
+    print("#" * 50)
+
     # ============= 3. PREPROCESS =============
     print("\n[3/6] Preprocesare date...")
-    # Normalize features using StandardScaler, perform chronological train/val/test splits, 
-    # and create sliding window input/output sequences.
     data = prepare_data(
         df,
         feature_cols=feature_cols,
         target_cols=target_cols,
         seq_length=SEQ_LENGTH,
         val_split=0.15,
-        test_split=0.15
+        test_split=0.15,
     )
 
     # ============= 4. BUILD MODEL =============
     print("\n[4/6] Construire model LSTM...")
-    input_size = data['X_train'].shape[2]
+    input_size = data["X_train"].shape[2]
     model = LSTMPredictor(
         input_size=input_size,
         hidden_size=HIDDEN_SIZE,
         num_layers=NUM_LAYERS,
         dropout=DROPOUT,
-        output_size=1
+        output_size=1,
     )
-    print(f"  Arhitectura: LSTM({HIDDEN_SIZE}, {NUM_LAYERS} layer)")
+    print(f"  Arhitectura: LSTM({HIDDEN_SIZE}, {NUM_LAYERS} layers)")
     print(f"  Parametri: {count_parameters(model):,}")
 
     # ============= 5. TRAIN =============
     print("\n[5/6] Antrenare...")
-    # Train the model with early stopping based on validation loss to prevent overfitting.
     model, history = train_model(
         model,
-        data['X_train'], data['y_train'],
-        data['X_val'], data['y_val'],
+        data["X_train"],
+        data["y_train"],
+        data["X_val"],
+        data["y_val"],
         epochs=EPOCHS,
         batch_size=BATCH_SIZE,
         learning_rate=LEARNING_RATE,
         weight_decay=WEIGHT_DECAY,
         patience=PATIENCE,
-        device=device
+        device=device,
     )
 
     # ============= 6. EVALUATE & RECONSTRUCT PRICES =============
     print("\n[6/6] Evaluare pe setul de test...")
-    device = next(model.parameters()).device
     model.eval()
     with torch.no_grad():
-        X_test_tensor = torch.tensor(data['X_test'], dtype=torch.float32).to(device)
+        X_test_tensor = torch.tensor(data["X_test"], dtype=torch.float32).to(device)
         y_pred_scaled = model(X_test_tensor).cpu().numpy()
 
-    # De-scale returns to their raw percentage domain
-    y_test_scaled = data['y_test']
-    scaler_y = data['scaler_y']
-    
-    from evaluate import denormalize, compute_metrics, plot_loss_history, plot_predictions, plot_scatter, plot_residuals
+    y_test_scaled = data["y_test"]
+    scaler_y = data["scaler_y"]
+
+    from evaluate import denormalize, compute_metrics
+
     y_test_return = denormalize(y_test_scaled, scaler_y)
     y_pred_return = denormalize(y_pred_scaled, scaler_y)
 
-    # Get Close price of the last day in each test window
-    # Because target return target_return_h1 represents (Close(t+1)/Close(t)) - 1,
-    # the base price Close(t) is the actual Close price of the final day in our lookback sequence window.
-    test_df = data['test_df']
-    close_last_day = test_df['Close'].values[SEQ_LENGTH - 1 : -1]
-
-    # Reconstruct the absolute actual and predicted Close prices for evaluation metrics
+    # Reconstruct Close prices
+    test_df = data["test_df"]
+    close_last_day = test_df["Close"].values[SEQ_LENGTH - 1 : -1]
     y_test_actual_price = close_last_day * (1.0 + y_test_return)
     y_pred_actual_price = close_last_day * (1.0 + y_pred_return)
 
-    # Compute standard regression metrics (MSE, MAE, MAPE, R2, Trend Directional Accuracy) on reconstructed prices
+    # Compute metrics on reconstructed prices
     metrics = compute_metrics(y_test_actual_price, y_pred_actual_price)
 
-    print("\n" + "=" * 50)
-    print("REZULTATE EVALUARE (PE PRETURI RECONSTRUITE) / EVALUATION ON RECONSTRUCTED PRICES")
-    print("=" * 50)
+    print(f"\nRezultate Evaluare (SEQ={SEQ_LENGTH}):")
     for k, v in metrics.items():
         print(f"  {k:30s}: {v:.4f}")
 
-    # Generate and save evaluation plots into the output directory
-    plot_loss_history(history, save=True)
-    plot_predictions(y_test_actual_price, y_pred_actual_price, save=True)
-    plot_scatter(y_test_actual_price, y_pred_actual_price, save=True)
-    plot_residuals(y_test_actual_price, y_pred_actual_price, save=True)
+    # Generate and save plots
+    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
 
-    # Save absolute prediction results, targets, and errors to CSV
-    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
-    results_df = np.column_stack([y_test_actual_price, y_pred_actual_price, y_test_actual_price - y_pred_actual_price])
+    plt.figure(figsize=(10, 5))
+    plt.plot(history["train_loss"], label="Train Loss", linewidth=1.5)
+    plt.plot(history["val_loss"], label="Validation Loss", linewidth=1.5)
+    plt.xlabel("Epoch")
+    plt.ylabel("MSE Loss")
+    plt.title(f"Evolutia functiei de pierdere (SEQ={SEQ_LENGTH})")
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, f"loss_history_seq{SEQ_LENGTH}_{NUM_LAYERS}_{HIDDEN_SIZE}_{LEARNING_RATE}_{BATCH_SIZE}_{DROPOUT}.png"), dpi=150)
+    plt.savefig(os.path.join(output_dir, "loss_history.png"), dpi=150)
+    plt.close()
+
+    plt.figure(figsize=(14, 6))
+    plt.plot(
+        y_test_actual_price, label="Valori Reale (Close)", linewidth=1.5, alpha=0.8
+    )
+    plt.plot(y_pred_actual_price, label="Predicții LSTM", linewidth=1.5, alpha=0.8)
+    plt.xlabel("Timp (zile)")
+    plt.ylabel("Pret Close (USD)")
+    plt.title(f"Predictii vs Valori Reale (SEQ={SEQ_LENGTH})")
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, f"predictions_seq{SEQ_LENGTH}_{NUM_LAYERS}_{HIDDEN_SIZE}_{LEARNING_RATE}_{BATCH_SIZE}_{DROPOUT}.png"), dpi=150)
+    plt.savefig(os.path.join(output_dir, "predictions.png"), dpi=150)
+    plt.close()
+
+    plt.figure(figsize=(8, 8))
+    plt.scatter(y_test_actual_price, y_pred_actual_price, alpha=0.5, s=20)
+    min_val = min(y_test_actual_price.min(), y_pred_actual_price.min())
+    max_val = max(y_test_actual_price.max(), y_pred_actual_price.max())
+    plt.plot(
+        [min_val, max_val],
+        [min_val, max_val],
+        "r--",
+        linewidth=1,
+        label="Perfect Fit",
+    )
+    plt.xlabel("Valori Reale (USD)")
+    plt.ylabel("Predictii (USD)")
+    plt.title(f"Predictii vs Reale (SEQ={SEQ_LENGTH})")
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, f"scatter_seq{SEQ_LENGTH}_{NUM_LAYERS}_{HIDDEN_SIZE}_{LEARNING_RATE}_{BATCH_SIZE}_{DROPOUT}.png"), dpi=150)
+    plt.savefig(os.path.join(output_dir, "scatter.png"), dpi=150)
+    plt.close()
+
+    plt.figure(figsize=(10, 5))
+    plt.hist(
+        y_test_actual_price - y_pred_actual_price,
+        bins=30,
+        alpha=0.7,
+        edgecolor="black",
+    )
+    plt.xlabel("Eroare (USD)")
+    plt.ylabel("Frecvență")
+    plt.title(f"Distributia erorilor (SEQ={SEQ_LENGTH})")
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, f"residuals_seq{SEQ_LENGTH}_{NUM_LAYERS}_{HIDDEN_SIZE}_{LEARNING_RATE}_{BATCH_SIZE}_{DROPOUT}.png"), dpi=150)
+    plt.savefig(os.path.join(output_dir, "residuals.png"), dpi=150)
+    plt.close()
+
+    # Save predictions to CSV with suffix and standard name
+    results_df = np.column_stack(
+        [
+            y_test_actual_price,
+            y_pred_actual_price,
+            y_test_actual_price - y_pred_actual_price,
+        ]
+    )
     header = "Actual_Close,Predicted_Close,Error"
-    np.savetxt(os.path.join(output_dir, 'predictions_results.csv'),
-               results_df, delimiter=',', header=header, comments='',
-               fmt='%.4f')
+    np.savetxt(
+        os.path.join(output_dir, f"predictions_results_seq{SEQ_LENGTH}_{NUM_LAYERS}_{HIDDEN_SIZE}_{LEARNING_RATE}_{BATCH_SIZE}_{DROPOUT}.csv"),
+        results_df,
+        delimiter=",",
+        header=header,
+        comments="",
+        fmt="%.4f",
+    )
+    np.savetxt(
+        os.path.join(output_dir, "predictions_results.csv"),
+        results_df,
+        delimiter=",",
+        header=header,
+        comments="",
+        fmt="%.4f",
+    )
+
+    # ============= SUMMARY =============
+    print("\n" + "=" * 60)
+    print("  REZUMAT METRICI (LSTM 5 STRATURI, SEQ_LENGTH = 30)")
+    print("=" * 60)
+    print(
+        f"{'SEQ_LENGTH':12s} | {'MSE':10s} | {'RMSE':10s} | {'MAE':10s} | {'MAPE (%)':10s} | {'R2':10s} | {'Dir Acc (%)':12s}"
+    )
+    print("-" * 88)
+    print(
+        f"{SEQ_LENGTH:12d} | {metrics['MSE']:10.4f} | {metrics['RMSE']:10.4f} | {metrics['MAE']:10.4f} | {metrics['MAPE (%)']:10.4f} | {metrics['R²']:10.4f} | {metrics['Directional Accuracy (%)']:12.4f}"
+    )
+    print("=" * 88)
 
     print("\n" + "=" * 60)
     print("  PROIECT FINALIZAT / PROJECT FINISHED")
@@ -169,5 +269,5 @@ def main():
     print("=" * 60)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
