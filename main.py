@@ -26,21 +26,26 @@ def main():
     print("=" * 60)
 
     # Use GPU (CUDA) if available, otherwise fallback to CPU
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device = ""
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif torch.backends.mps.is_available():
+        device = "mps"
+    else:
+        device = "cpu"
     print(f"\nDevice: {device}")
 
     # ============= HYPERPARAMETERS =============
-    SEQ_LENGTH = 30     # Lookback window: number of past days used as input features
-    HORIZON = 1        # Prediction horizon: predict 1 day into the future
-    HIDDEN_SIZE = 64   # LSTM hidden state vector size
-    NUM_LAYERS = 2     # Number of stacked LSTM layers
-    DROPOUT = 0.20     # Dropout rate applied between recurrent layers
-    EPOCHS = 150       # Maximum epochs to train the model
-    BATCH_SIZE = 32    # Batch size for SGD optimizer
-    LEARNING_RATE = 1e-3 # Step size for optimizer
-    WEIGHT_DECAY = 1e-5 # L2 regularization strength
-    PATIENCE = 25      # Early stopping patience in epochs
-
+    SEQ_LENGTH = 30       # Lookback window: number of past days used as input features
+    HORIZON = 1           # Prediction horizon: predict 1 day into the future
+    HIDDEN_SIZE = 16      # LSTM hidden state vector size
+    NUM_LAYERS = 4        # Deep LSTM (5 layers)
+    DROPOUT = 0.2         # Higher dropout to mitigate overfitting in deep recurrent networks
+    EPOCHS = 150          # Maximum epochs to train the model
+    BATCH_SIZE = 32       # Batch size for SGD optimizer
+    LEARNING_RATE = 1e-3  # Step size for optimizer
+    WEIGHT_DECAY = 1e-5   # L2 regularization strength
+    PATIENCE = 25         # Early stopping patience in epochs
     # ============= 1. LOAD DATA =============
     print("\n[1/6] Incarcare date...")
     # Load JPM stock historical price data (loads from local data_jpm_full.csv fast-path)

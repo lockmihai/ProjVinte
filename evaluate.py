@@ -3,6 +3,8 @@ evaluate.py
 Evaluare model: metrici, grafice, salvare rezultate / Model evaluation: metrics, plots, and saving results.
 """
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import torch
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
